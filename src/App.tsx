@@ -20,16 +20,40 @@ function getEdgeProvider(callback: Function) {
 
 function App() {
   const [edgeProvider, setEdgeProvider] = useState<any | void>(undefined)
+  const [currencyCodes, setCurrencyCodes] = useState<string>(`["BTC", "BCH", "ETH", "ETH-USDC"]`)
   const [currencyCode, setCurrencyCode] = useState<string | void>(undefined)
   const [readDataText, setReadDataText] = useState<string | void>(undefined)
   const [readKey, setReadKey] = useState<string | void>(undefined)
+  const [receiveAddress, setReceiveAddress] = useState<string>('')
+  const [spendAddress, setSpendAddress] = useState<string>('')
+  const [amount, setAmount] = useState<string>('')
+  const [uri, setUri] = useState<string>('')
   const [key, setKey] = useState<string | void>(undefined)
   const [value, setValue] = useState<string | void>(undefined)
 
   
-  const chooseWallet = useCallback(() => {
-    if (edgeProvider) edgeProvider.chooseCurrencyWallet(['BTC', 'BCH', '']).then(setCurrencyCode)
-   }, [edgeProvider])
+  const chooseWallet = useCallback(async () => {
+    if (edgeProvider) {
+      let ccArray = []
+      try {
+        let cc = currencyCodes
+          .replace(/“/g, '"')
+          .replace(/”/g, '"')
+          .replace(/‘/g, '\'')
+          .replace(/’/g, '\'') 
+
+        ccArray = JSON.parse(cc)
+        if (typeof ccArray !== 'object' || !(ccArray instanceof Array)) {
+          throw new Error('Invalid currency code array')
+        }
+        await edgeProvider.chooseCurrencyWallet(ccArray).then(setCurrencyCode)
+        const result = await edgeProvider.getReceiveAddress()
+        setReceiveAddress(result.publicAddress)
+      } catch (e: any) {
+        console.log(e.message)
+      }
+    }
+   }, [edgeProvider, currencyCodes])
 
    const readData = useCallback(async () => {
     if (edgeProvider) {
@@ -53,8 +77,8 @@ function App() {
 
    const requestSpend = useCallback(() => {
     if (edgeProvider) edgeProvider.requestSpend([{
-      publicAddress: '39LPRaWgum1tPBsxToeydvYF9bbNAUdBZX',
-      exchangeAmount: '0.002'
+      publicAddress: spendAddress,
+      exchangeAmount: amount
       }],
       {
         metadata: { // Optional metadata to tag this transaction with
@@ -64,11 +88,11 @@ function App() {
         }, 
         orderId: 'cWmFSzYKfRMGrN'
       })
-   }, [edgeProvider])
+   }, [edgeProvider, spendAddress, amount])
 
    const requestSpendUri = useCallback(() => {
     if (edgeProvider) {
-      edgeProvider.requestSpendUri('bitcoin:?r=https://bitpay.com/i/58y1c5HE2VKLwTG8mfFcyf', {
+      edgeProvider.requestSpendUri(uri, {
         metadata: {
           name: 'My Name',
           category: 'Expense:Donation',
@@ -76,9 +100,8 @@ function App() {
         }
       })
     }
-   }, [edgeProvider])
+   }, [edgeProvider, uri])
 
-  console.log('edgeProvider:', edgeProvider)
   if (!edgeProvider) {
     getEdgeProvider((r: any) => setEdgeProvider(r))
   }
@@ -91,25 +114,37 @@ function App() {
     )
   }
 
-  const eptext = (edgeProvider != null ? 'Have Edge Provider' : 'No Edge Provider')
+  const eptext = (edgeProvider != null ? 'We Have Edge Provider' : 'No Edge Provider')
   const cctext = `Currency Code: ${currencyCode}`
-
+  const ratext = `Receive Address: ${receiveAddress}`
   const readtext = `${readKey}: ${readDataText}`
+
   return (
         <body className="App-body">
-          {eptext}<br/>
-          {cctext}<br/><br/>
+          {eptext}<br/><br/>
+
+          <input autoCapitalize="off" value={currencyCodes ?? ''} className='App-input' onChange={e => setCurrencyCodes(e.target.value)} placeholder="Enter Currency Codes" /><br/><br/>
           <button className="App-button" onClick={chooseWallet}>
             Choose Wallets
-          </button><br/><br/>
+          </button><br/>
+          {cctext}<br/>
+          {ratext}<br/>
+          <hr/>
 
+          <input autoCapitalize="off" value={spendAddress ?? ''} className='App-input' onChange={e => setSpendAddress(e.target.value)} placeholder="Enter Public Address" /><br/>
+          <input autoCapitalize="off" value={amount ?? ''} className='App-input' onChange={e => setAmount(e.target.value)} placeholder="Enter Amount" /><br/>
           <button className="App-button" onClick={requestSpend}>
             Spend Funds
-          </button><br/><br/>
+          </button><br/>
 
+          <hr/>
+
+          <input autoCapitalize="off" value={uri ?? ''} className='App-input' onChange={e => setUri(e.target.value)} placeholder="Enter URI" /><br/>
           <button className="App-button" onClick={requestSpendUri}>
             Spend Funds URI
-          </button><br/><br/>
+          </button><br/>
+
+          <hr/>
 
           Key <button onClick={() => setKey('username')}>username</button> <button onClick={() => setKey('authToken')}>authToken</button><br/>
           <input autoCapitalize="off" value={key ?? ''} className='App-input' onChange={e => setKey(e.target.value)} placeholder="Enter Key" /><br/><br/>
