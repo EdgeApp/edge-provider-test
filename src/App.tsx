@@ -26,6 +26,7 @@ function App() {
   const [readKey, setReadKey] = useState<string | void>(undefined)
   const [receiveAddress, setReceiveAddress] = useState<string>('')
   const [spendAddress, setSpendAddress] = useState<string>('')
+  const [spendCurrencyCode, setSpendCurrencyCode] = useState<string | void>(undefined)
   const [amount, setAmount] = useState<string>('')
   const [uri, setUri] = useState<string>('')
   const [key, setKey] = useState<string | void>(undefined)
@@ -76,6 +77,7 @@ function App() {
    }, [edgeProvider, key, value])
 
    const requestSpend = useCallback(() => {
+    const cCode = spendCurrencyCode === '' ? undefined : spendCurrencyCode
     if (edgeProvider) edgeProvider.requestSpend([{
       publicAddress: spendAddress,
       exchangeAmount: amount
@@ -85,10 +87,11 @@ function App() {
           name: 'Bitrefill',
           category: 'Expense:Gift Cards',
           notes: 'Purchase $200 Whole Foods gift card. Order ID 1234567890abcd'
-        }, 
+        },
+        currencyCode: cCode,
         orderId: 'cWmFSzYKfRMGrN'
       })
-   }, [edgeProvider, spendAddress, amount])
+   }, [edgeProvider, spendAddress, amount, spendCurrencyCode])
 
    const requestSpendUri = useCallback(() => {
     if (edgeProvider) {
@@ -133,6 +136,7 @@ function App() {
 
           <input autoCapitalize="off" value={spendAddress ?? ''} className='App-input' onChange={e => setSpendAddress(e.target.value)} placeholder="Enter Public Address" /><br/>
           <input autoCapitalize="off" value={amount ?? ''} className='App-input' onChange={e => setAmount(e.target.value)} placeholder="Enter Amount" /><br/>
+          <input autoCapitalize="off" value={spendCurrencyCode ?? ''} className='App-input' onChange={e => setSpendCurrencyCode(e.target.value)} placeholder="Enter Currency Code (optional)" /><br/>
           <button className="App-button" onClick={requestSpend}>
             Spend Funds
           </button><br/>
