@@ -25,6 +25,8 @@ function App() {
   const [readDataText, setReadDataText] = useState<string | void>(undefined)
   const [readKey, setReadKey] = useState<string | void>(undefined)
   const [receiveAddress, setReceiveAddress] = useState<string>('')
+  const [messageToSign, setMessageToSign] = useState<string>('')
+  const [signedMessage, setSignedMessage] = useState<string>('')
   const [spendAddress, setSpendAddress] = useState<string>('')
   const [spendCurrencyCode, setSpendCurrencyCode] = useState<string | void>(undefined)
   const [amount, setAmount] = useState<string>('')
@@ -55,6 +57,13 @@ function App() {
       }
     }
    }, [edgeProvider, currencyCodes])
+
+   const signMessage = useCallback(async () => {
+    if (edgeProvider) {
+      const data = await edgeProvider.signMessage(messageToSign)
+        setSignedMessage(data)
+    }
+   }, [edgeProvider, messageToSign])
 
    const readData = useCallback(async () => {
     if (edgeProvider) {
@@ -121,6 +130,7 @@ function App() {
   const cctext = `Currency Code: ${currencyCode}`
   const ratext = `Receive Address: ${receiveAddress}`
   const readtext = `${readKey}: ${readDataText}`
+  const signedMsgText = `Signed Message: ${signedMessage}`
 
   return (
         <body className="App-body">
@@ -143,6 +153,14 @@ function App() {
 
           <hr/>
 
+          <input autoCapitalize="off" value={messageToSign ?? ''} className='App-input' onChange={e => setMessageToSign(e.target.value)} placeholder="Enter Message to Sign" /><br/>
+          <button className="App-button" onClick={signMessage}>
+            Sign Message (BTC only)
+          </button><br/>
+          {signedMsgText}
+          <br/>
+
+          <hr/>
           <input autoCapitalize="off" value={uri ?? ''} className='App-input' onChange={e => setUri(e.target.value)} placeholder="Enter URI" /><br/>
           <button className="App-button" onClick={requestSpendUri}>
             Spend Funds URI
